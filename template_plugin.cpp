@@ -29,7 +29,6 @@ struct Functionality
 template <typename TDomain, typename TAlgebra>
 static void DomainAlgebra(Registry& reg, string grps)
 {
-//	useful defines
 	string suffix = GetDomainAlgebraSuffix<TDomain,TAlgebra>();
 	string tag = GetDomainAlgebraTag<TDomain,TAlgebra>();
 
@@ -47,7 +46,6 @@ static void DomainAlgebra(Registry& reg, string grps)
 template <typename TDomain>
 static void Domain(Registry& reg, string grp)
 {
-//	useful defines
 	string suffix = GetDomainSuffix<TDomain>();
 	string tag = GetDomainTag<TDomain>();
 
@@ -65,7 +63,6 @@ static void Domain(Registry& reg, string grp)
 template <int dim>
 static void Dimension(Registry& reg, string grp)
 {
-//	useful defines
 	string suffix = GetDimensionSuffix<dim>();
 	string tag = GetDimensionTag<dim>();
 
@@ -83,7 +80,6 @@ static void Dimension(Registry& reg, string grp)
 template <typename TAlgebra>
 static void Algebra(Registry& reg, string grp)
 {
-//	useful defines
 	string suffix = GetAlgebraSuffix<TAlgebra>();
 	string tag = GetAlgebraTag<TAlgebra>();
 
