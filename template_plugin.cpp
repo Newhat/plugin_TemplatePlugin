@@ -126,6 +126,7 @@ InitUGPlugin_Template(Registry* reg, string parentGroup)
 	{
 		UG_LOG("\n### ERROR in plugin: "<<grp<<". "
 				"Registration failed (using name " << ex.name << ").\n");
+		throw(ex);
 	}
 }
 
