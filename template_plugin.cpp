@@ -27,7 +27,7 @@ struct Functionality
  * @param parentGroup		group for sorting of functionality
  */
 template <typename TDomain, typename TAlgebra>
-static void DomainAlgebra(Registry& reg, string parentGroup)
+static void DomainAlgebra(Registry& reg, string grps)
 {
 //	useful defines
 	string suffix = GetDomainAlgebraSuffix<TDomain,TAlgebra>();
@@ -81,7 +81,7 @@ static void Dimension(Registry& reg, string grp)
  * @param parentGroup		group for sorting of functionality
  */
 template <typename TAlgebra>
-static void Algebra(Registry& reg, string parentGroup)
+static void Algebra(Registry& reg, string grp)
 {
 //	useful defines
 	string suffix = GetAlgebraSuffix<TAlgebra>();
@@ -97,7 +97,7 @@ static void Algebra(Registry& reg, string parentGroup)
  * @param reg				registry
  * @param parentGroup		group for sorting of functionality
  */
-static void Common(Registry& reg, string parentGroup)
+static void Common(Registry& reg, string grp)
 {
 
 }
