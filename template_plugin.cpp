@@ -110,9 +110,9 @@ static void Common(Registry& reg, string grp)
  * This function is called when the plugin is loaded.
  */
 extern "C" void
-InitUGPlugin_Template(Registry* reg, string parentGroup)
+InitUGPlugin_Template(Registry* reg, string grp)
 {
-	string grp(parentGroup); grp.append("Template/");
+	grp.append("Template/");
 	typedef Template::Functionality Functionality;
 
 	try{
@@ -122,12 +122,7 @@ InitUGPlugin_Template(Registry* reg, string parentGroup)
 		RegisterAlgebraDependent<Functionality>(*reg,grp);
 		RegisterDomainAlgebraDependent<Functionality>(*reg,grp);
 	}
-	catch(UG_REGISTRY_ERROR_RegistrationFailed ex)
-	{
-		UG_LOG("\n### ERROR in plugin: "<<grp<<". "
-				"Registration failed (using name " << ex.name << ").\n");
-		throw(ex);
-	}
+	UG_REGISTRY_CATCH_THROW(grp);
 }
 
 }// namespace ug
