@@ -11,15 +11,15 @@ namespace ug{
 namespace Template{
 
 /**
- * Class exporting the functionality of the plugin. All functionality that is to
+ * Class exporting the functionality. All functionality that is to
  * be used in scripts or visualization must be registered here.
  */
 struct Functionality
 {
 
 /**
- * Function called for the registration of Domain and Algebra dependent parts
- * of the plugin. All Functions and Classes depending on both Domain and Algebra
+ * Function called for the registration of Domain and Algebra dependent parts.
+ * All Functions and Classes depending on both Domain and Algebra
  * are to be placed here when registering. The method is called for all
  * available Domain and Algebra types, based on the current build options.
  *
@@ -35,8 +35,8 @@ static void DomainAlgebra(Registry& reg, string grp)
 }
 
 /**
- * Function called for the registration of Domain dependent parts
- * of the plugin. All Functions and Classes depending on the Domain
+ * Function called for the registration of Domain dependent parts.
+ * All Functions and Classes depending on the Domain
  * are to be placed here when registering. The method is called for all
  * available Domain types, based on the current build options.
  *
@@ -52,8 +52,8 @@ static void Domain(Registry& reg, string grp)
 }
 
 /**
- * Function called for the registration of Dimension dependent parts
- * of the plugin. All Functions and Classes depending on the Dimension
+ * Function called for the registration of Dimension dependent parts.
+ * All Functions and Classes depending on the Dimension
  * are to be placed here when registering. The method is called for all
  * available Dimension types, based on the current build options.
  *
@@ -69,8 +69,8 @@ static void Dimension(Registry& reg, string grp)
 }
 
 /**
- * Function called for the registration of Algebra dependent parts
- * of the plugin. All Functions and Classes depending on Algebra
+ * Function called for the registration of Algebra dependent parts.
+ * All Functions and Classes depending on Algebra
  * are to be placed here when registering. The method is called for all
  * available Algebra types, based on the current build options.
  *
@@ -86,8 +86,8 @@ static void Algebra(Registry& reg, string grp)
 }
 
 /**
- * Function called for the registration of Domain and Algebra independent parts
- * of the plugin. All Functions and Classes not depending on Domain and Algebra
+ * Function called for the registration of Domain and Algebra independent parts.
+ * All Functions and Classes not depending on Domain and Algebra
  * are to be placed here when registering.
  *
  * @param reg				registry
@@ -108,7 +108,7 @@ static void Common(Registry& reg, string grp)
 extern "C" void
 InitUGPlugin_Template(Registry* reg, string grp)
 {
-	grp.append("Template/");
+	grp.append("/Template");
 	typedef Template::Functionality Functionality;
 
 	try{
