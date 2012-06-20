@@ -17,10 +17,10 @@ set(SOURCES	template_plugin.cpp)
 
 
 
-if(STATIC)
+if(buildEmbeddedPlugins)
 	# add the sources to ug4's sources
 	EXPORTSOURCES(plugins/experimental/template ${SOURCES})
-else(STATIC)
+else(buildEmbeddedPlugins)
 	add_library(Template SHARED ${SOURCES})
 	target_link_libraries (Template ug4)
-endif(STATIC)
+endif(buildEmbeddedPlugins)
