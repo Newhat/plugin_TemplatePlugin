@@ -4,6 +4,11 @@
 
 #include "bridge/util.h"
 
+// replace this with util_domain_dependent.h or util_algebra_dependent.h
+// to speed up compilation time
+#include "bridge/util_domain_algebra_dependent.h"
+
+
 using namespace std;
 using namespace ug::bridge;
 
