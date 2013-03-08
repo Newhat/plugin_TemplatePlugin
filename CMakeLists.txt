@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 2.6)
 project(UG_PLUGIN_${pluginName})
 
 # include the definitions and dependencies for ug-plugins.
-include("../../../ug_plugin_cmake_includes.txt")
+include("../../../cmake/ug_plugin_includes.cmake")
 
 if(buildEmbeddedPlugins)
 	# add the sources to ug4's sources
