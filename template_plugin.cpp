@@ -113,7 +113,7 @@ static void Common(Registry& reg, string grp)
 extern "C" void
 InitUGPlugin_Template(Registry* reg, string grp)
 {
-	grp.append("/Template");
+	grp.append("Template");
 	typedef Template::Functionality Functionality;
 
 	try{
