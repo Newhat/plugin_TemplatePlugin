@@ -15,6 +15,13 @@ using namespace ug::bridge;
 namespace ug{
 namespace Template{
 
+/** 
+ *  \defgroup plugin_template Plugin Template
+ *  \ingroup plugins_experimental
+ *  This is a template for new plugins.
+ *  \{
+ */
+
 /**
  * Class exporting the functionality. All functionality that is to
  * be used in scripts or visualization must be registered here.
@@ -104,6 +111,10 @@ static void Common(Registry& reg, string grp)
 }
 
 }; // end Functionality
+
+// end group plugin_template
+/// \}
+
 } // end namespace Template
 
 
