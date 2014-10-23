@@ -1,24 +1,33 @@
 ################################################################################
-# TEMPLATE
+# PerformanceLib
 #
-# The template plugin.
+# The PerformanceLib plugin.
 ################################################################################
+
+cmake_minimum_required(VERSION 2.6)
 
 # Name of your plugin, path to your plugin (relative to ug's root path) and sources.
-set(pluginName	Template)
+set(pluginName	PerformanceLib)
 set(pluginPath	plugins/experimental/template)
-set(SOURCES		template_plugin.cpp)
 
-
-################################################################################
-# The code below doesn't have to be changed (usually)
-################################################################################
-cmake_minimum_required(VERSION 2.6)
 
 project(UG_PLUGIN_${pluginName})
 
 # include the definitions and dependencies for ug-plugins.
 include("../../../cmake/ug_plugin_includes.cmake")
+
+
+
+
+#### here go all sources
+set(SOURCES		performance_lib_plugin.cpp)
+
+
+
+################################################################################
+# The code below doesn't have to be changed (usually)
+################################################################################
+
 
 if(buildEmbeddedPlugins)
 	# add the sources to ug4's sources
