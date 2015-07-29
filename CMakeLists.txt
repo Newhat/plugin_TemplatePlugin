@@ -1,12 +1,5 @@
-################################################################################
-# TEMPLATE
-#
-# The template plugin.
-################################################################################
-
-# Name of your plugin, path to your plugin (relative to ug's root path) and sources.
+# Name of your plugin and sources.
 set(pluginName	Template)
-set(pluginPath	plugins/experimental/template)
 set(SOURCES		template_plugin.cpp)
 
 
@@ -18,11 +11,11 @@ cmake_minimum_required(VERSION 2.6)
 project(UG_PLUGIN_${pluginName})
 
 # include the definitions and dependencies for ug-plugins.
-include("../../../cmake/ug_plugin_includes.cmake")
+include(${CMAKE_SOURCE_DIR}/cmake/ug_plugin_includes.cmake)
 
 if(buildEmbeddedPlugins)
 	# add the sources to ug4's sources
-	EXPORTSOURCES(${pluginPath} ${SOURCES})
+	EXPORTSOURCES(${CMAKE_CURRENT_SOURCE_DIR} ${SOURCES})
 else(buildEmbeddedPlugins)
 	# create a shared library from the sources and link it against ug4.
 	add_library(${pluginName} SHARED ${SOURCES})
