@@ -15,9 +15,11 @@ In order to use this plugin as a base for your own plugin, please copy 'template
 and 'CMakeLists.txt' to your plugin folder (e.g. 'plugins/YourPlugin') and adjust
 the filname accordingly (e.g. 'template_plugin.cpp' -> 'your_plugin.cpp').
 
-Furthermore, in 'CMakeLists.txt', change the plugin name from 'TemplatePlugin' to the name of your plugin:
+Furthermore, in 'CMakeLists.txt', change the plugin name from 'TemplatePlugin' to
+the name of your plugin and adjust the sources:
 
     set(pluginName	YourPlugin)
+    set(SOURCES		your_plugin.cpp)
 
 Afterwards, in 'your_plugin.cpp', rename the namespace 'TemplatePlugin' to 'YourPlugin' and
 rename the function 'InitUGPlugin_TemplatePlugin' to
@@ -25,5 +27,6 @@ rename the function 'InitUGPlugin_TemplatePlugin' to
     InitUGPlugin_YourPlugin(Registry* reg, string grp)
 
 You can now activate your plugin and build it along with UG4 in the same way as
-the other plugins, too.
+the other plugins, too. To this go to your build-directory and type:
 
+    cmake -DYourPlugin=ON .
