@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015:  G-CSC, Goethe University Frankfurt
+ * Copyright (c) 2011-2016:  G-CSC, Goethe University Frankfurt
  * Author: Sebastian Reiter
  * 
  * This file is part of UG4.
