@@ -1,11 +1,39 @@
-/**
- * Template plugin
+/*
+ * Copyright (c) 2011-2015:  G-CSC, Goethe University Frankfurt
+ * Author: Sebastian Reiter
+ * 
+ * This file is part of UG4.
+ * 
+ * UG4 is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License version 3 (as published by the
+ * Free Software Foundation) with the following additional attribution
+ * requirements (according to LGPL/GPL v3 §7):
+ * 
+ * (1) The following notice must be displayed in the Appropriate Legal Notices
+ * of covered and combined works: "Based on UG4 (www.ug4.org/license)".
+ * 
+ * (2) The following notice must be displayed at a prominent place in the
+ * terminal output of covered works: "Based on UG4 (www.ug4.org/license)".
+ * 
+ * (3) The following bibliography is recommended for citation and must be
+ * preserved in all covered files:
+ * "Reiter, S., Vogel, A., Heppner, I., Rupp, M., and Wittum, G. A massively
+ *   parallel geometric multigrid solver on hierarchically distributed grids.
+ *   Computing and visualization in science 16, 4 (2013), 151-164"
+ * "Vogel, A., Reiter, S., Rupp, M., Nägel, A., and Wittum, G. UG4 -- a novel
+ *   flexible software system for simulating pde based models on high performance
+ *   computers. Computing and visualization in science 16, 4 (2013), 165-179"
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
  */
 
 #include "bridge/util.h"
 
-// replace this with util_domain_dependent.h or util_algebra_dependent.h
-// to speed up compilation time
+// if possible, replace this with util_domain_dependent.h or
+// util_algebra_dependent.h to speed up compilation time
 #include "bridge/util_domain_algebra_dependent.h"
 
 
@@ -14,6 +42,28 @@ using namespace ug::bridge;
 
 namespace ug{
 namespace Template{
+
+
+//	'TemplateSampleClass' and 'TemplateSampleFunction' serve as examples. Please
+//	delete them if you use this file as a template for your own plugin.
+//
+//	If you want to test the registry with those classes, please uncomment the
+//	commented sections in 'Functionality::DomainAlgebra' and 'Functionality::Common'.
+
+///	a sample class that is used to show how class-groups can be registered.
+template <class TDomain, class TAlgebra>
+class TemplateSampleClass {
+	public:
+		TemplateSampleClass ()		{}
+		void print_hello () const	{UG_LOG("hello\n");}
+};
+
+///	a sample function that us used to show how a simple function can be registered
+void TemplateSampleFunction () {
+	UG_LOG("TemplateSampleFunction executed.\n");
+}
+
+
 
 /** 
  *  \defgroup plugin_template Plugin Template
@@ -44,6 +94,17 @@ static void DomainAlgebra(Registry& reg, string grp)
 	string suffix = GetDomainAlgebraSuffix<TDomain,TAlgebra>();
 	string tag = GetDomainAlgebraTag<TDomain,TAlgebra>();
 
+//	The code below illustrates how a template-dependend class
+//	can be registered as a class-group.
+	// {
+	// 	typedef TemplateSampleClass<TDomain, TAlgebra> T;
+	// 	string name = string("TemplateSampleClass").append(suffix);
+	// 	reg.add_class_<T>(name, grp)
+	// 		.add_constructor()
+	// 		.add_method("print_hello", &T::print_hello, "", "", "prints hello")
+	// 		.set_construct_as_smart_pointer(true);
+	// 	reg.add_class_to_group(name, "TemplateSampleClass", tag);
+	// }
 }
 
 /**
@@ -107,7 +168,9 @@ static void Algebra(Registry& reg, string grp)
  */
 static void Common(Registry& reg, string grp)
 {
-
+//	The code below shows how a simple function can be registered
+	// reg.add_function("TemplateSampleFunction", &TemplateSampleFunction, grp,
+	// 				 "", "", "Prints a short message");
 }
 
 }; // end Functionality
