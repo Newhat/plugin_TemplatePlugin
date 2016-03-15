@@ -41,7 +41,7 @@ using namespace std;
 using namespace ug::bridge;
 
 namespace ug{
-namespace Template{
+namespace TemplatePlugin{
 
 
 //	'TemplateSampleClass' and 'TemplateSampleFunction' serve as examples. Please
@@ -178,17 +178,17 @@ static void Common(Registry& reg, string grp)
 // end group plugin_template
 /// \}
 
-} // end namespace Template
+} // end namespace TemplatePlugin
 
 
 /**
  * This function is called when the plugin is loaded.
  */
 extern "C" void
-InitUGPlugin_Template(Registry* reg, string grp)
+InitUGPlugin_TemplatePlugin(Registry* reg, string grp)
 {
-	grp.append("Template");
-	typedef Template::Functionality Functionality;
+	grp.append("TemplatePlugin");
+	typedef TemplatePlugin::Functionality Functionality;
 
 	try{
 		RegisterCommon<Functionality>(*reg,grp);

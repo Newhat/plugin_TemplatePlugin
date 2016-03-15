@@ -30,7 +30,7 @@
 
 
 # Name of your plugin and sources.
-set(pluginName	Template)
+set(pluginName	TemplatePlugin)
 set(SOURCES		template_plugin.cpp)
 
 
