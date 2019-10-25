@@ -36,6 +36,34 @@
 // util_algebra_dependent.h to speed up compilation time
 #include "bridge/util_domain_algebra_dependent.h"
 
+// begin test 10/24/2019 ---------------------------------------------------------------------------
+
+//header from grid_function_util.h-----------------------------------------------------------------
+#include <vector>
+#include <string>
+#include <cmath>  // for isinf, isnan
+#include <boost/function.hpp>
+#include "common/util/file_util.h"
+#include "lib_algebra/cpu_algebra/sparsematrix_print.h"
+#include "lib_algebra/operator/interface/matrix_operator.h"
+#include "lib_algebra/operator/debug_writer.h"
+#include "lib_algebra/operator/vector_writer.h"
+#include "lib_algebra/common/matrixio/matrix_io_mtx.h"
+#include "lib_algebra/common/connection_viewer_output.h"
+#include "lib_algebra/common/csv_gnuplot_output.h"
+#include "lib_grid/algorithms/debug_util.h"  // for ElementDebugInfo
+#include "lib_grid/tools/periodic_boundary_manager.h"
+#include "lib_disc/io/vtkoutput.h"
+#include "lib_disc/spatial_disc/constraints/constraint_interface.h"
+#include "lib_disc/dof_manager/dof_distribution.h"
+#include "lib_disc/spatial_disc/user_data/user_data.h"
+#include "lib_disc/common/groups_util.h"
+#include "lib_disc/common/geometry_util.h"
+#include "lib_disc/function_spaces/integrate.h"
+#include "lib_disc/function_spaces/grid_function.h"
+#include "lib_disc/function_spaces/dof_position_util.h"
+
+
 
 using namespace std;
 using namespace ug::bridge;
@@ -63,6 +91,76 @@ void TemplateSampleFunction () {
 	UG_LOG("TemplateSampleFunction executed.\n");
 }
 
+// for test
+// from connection_viewer_input.h
+// with additional checks
+template<typename vector_type>
+bool ReadVector(std::string filename, vector_type &vec,int dim)
+{
+    Progress p;
+	std::cout << " Reading std::vector from " <<  filename << "... ";
+	std::fstream matfile(filename.c_str(), std::ios::in);
+	if(matfile.is_open() == false) { std::cout << "failed.\n"; return false; }
+
+	int version=-1, dimension=-1, gridsize;
+
+	matfile >> version;
+	matfile >> dimension;
+	matfile >> gridsize;
+
+	assert(version == 1);
+	assert(dimension == dim);
+	// todo check positions and not just size
+	assert(gridsize == (int)vec.size());
+
+
+	PROGRESS_START(prog, gridsize*2, "ReadVector " << dimension << "d from " << filename << " , " << gridsize << " x " << gridsize);
+	for(int i=0; i<gridsize; i++)
+	{
+		if(i%100) { PROGRESS_UPDATE(prog, i); }
+		if(matfile.eof())
+		{
+			std::cout << " failed.\n";
+			assert(0);
+			return false;
+		}
+		double x, y, z;
+		matfile >> x >> y;
+		if(dimension==3) matfile >> z;
+	}
+
+	int printStringsInWindow;
+	matfile >> printStringsInWindow;
+
+	// vec.resize(gridsize);
+	bool bEOF = matfile.eof();
+	while(!bEOF)
+	{
+		int from, to; double value;
+		char c = matfile.peek();
+		if(c == -1 || c == 'c' || c == 'v' || matfile.eof())
+			break;
+
+		matfile >> from >> to >> value;
+		assert(from == to);
+		vec[from] = value;
+		if(from%100) { PROGRESS_UPDATE(prog, from); }
+		bEOF = matfile.eof();
+	}
+	return true;
+}
+
+// load vector that has been saved in connection viewer format and write it
+// into grid function
+template<typename TGridFunction>
+void LoadVector22(TGridFunction& u,const char* filename){
+	PROFILE_FUNC();
+	typename TGridFunction::algebra_type::vector_type b;
+	b.resize(u.num_indices());
+	ReadVector(filename,b,TGridFunction::dim);
+	u.assign(b);
+}
+//test end
 
 
 /** 
@@ -94,17 +192,32 @@ static void DomainAlgebra(Registry& reg, string grp)
 	string suffix = GetDomainAlgebraSuffix<TDomain,TAlgebra>();
 	string tag = GetDomainAlgebraTag<TDomain,TAlgebra>();
 
+	//	typedef
+		//static const int dim = TDomain::dim;
+		//typedef typename TAlgebra::vector_type vector_type;
+		//typedef typename TAlgebra::matrix_type matrix_type;
+		typedef GridFunction<TDomain, TAlgebra> function_type;
+
 //	The code below illustrates how a template-dependend class
 //	can be registered as a class-group.
-	// {
-	// 	typedef TemplateSampleClass<TDomain, TAlgebra> T;
-	// 	string name = string("TemplateSampleClass").append(suffix);
-	// 	reg.add_class_<T>(name, grp)
-	// 		.add_constructor()
-	// 		.add_method("print_hello", &T::print_hello, "", "", "prints hello")
-	// 		.set_construct_as_smart_pointer(true);
-	// 	reg.add_class_to_group(name, "TemplateSampleClass", tag);
-	// }
+	/*
+	 {
+	 	typedef TemplateSampleClass<TDomain, TAlgebra> T;
+	 	string name = string("TemplateSampleClass").append(suffix);
+	 	reg.add_class_<T>(name, grp)
+	 		.add_constructor()
+	 		.add_method("print_hello", &T::print_hello, "", "", "prints hello")
+	 		.set_construct_as_smart_pointer(true);
+	 	reg.add_class_to_group(name, "TemplateSampleClass", tag);
+	 }
+	 */
+		//	WriteGridToVTK
+			{
+				reg.add_function("LoadVector22",
+								 &LoadVector22<function_type>, grp,
+									"", "GridFunction#Filename|save-dialog|endings=[\"vtk\"];description=\"VTK-Files\"",
+									"Saves GridFunction to *.vtk file", "No help");
+			}
 }
 
 /**
@@ -166,11 +279,12 @@ static void Algebra(Registry& reg, string grp)
  * @param reg				registry
  * @param parentGroup		group for sorting of functionality
  */
+
 static void Common(Registry& reg, string grp)
 {
 //	The code below shows how a simple function can be registered
-	// reg.add_function("TemplateSampleFunction", &TemplateSampleFunction, grp,
-	// 				 "", "", "Prints a short message");
+	 reg.add_function("TemplateSampleFunction", &TemplateSampleFunction, grp,
+	 				 "", "", "Prints a short message");
 }
 
 }; // end Functionality
