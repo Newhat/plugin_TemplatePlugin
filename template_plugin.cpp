@@ -63,6 +63,11 @@
 #include "lib_disc/function_spaces/grid_function.h"
 #include "lib_disc/function_spaces/dof_position_util.h"
 
+#include "bridge/bridge.h"
+#include "bridge/util.h"
+#include "bridge/util_algebra_dependent.h"
+
+#include <fstream>
 
 
 using namespace std;
@@ -91,15 +96,15 @@ void TemplateSampleFunction () {
 	UG_LOG("TemplateSampleFunction executed.\n");
 }
 
-// for test
+// for test 10/25/2019
 // from connection_viewer_input.h
 // with additional checks
-template<typename vector_type>
-bool ReadVector(std::string filename, vector_type &vec,int dim)
-{
-    Progress p;
+template<typename TGridFunction>
+bool LoadVector22(TGridFunction& vec,const char* filename){
+    //Progress p;
 	std::cout << " Reading std::vector from " <<  filename << "... ";
-	std::fstream matfile(filename.c_str(), std::ios::in);
+	std::ifstream matfile;
+	matfile.open(filename);
 	if(matfile.is_open() == false) { std::cout << "failed.\n"; return false; }
 
 	int version=-1, dimension=-1, gridsize;
@@ -109,7 +114,6 @@ bool ReadVector(std::string filename, vector_type &vec,int dim)
 	matfile >> gridsize;
 
 	assert(version == 1);
-	assert(dimension == dim);
 	// todo check positions and not just size
 	assert(gridsize == (int)vec.size());
 
@@ -147,18 +151,22 @@ bool ReadVector(std::string filename, vector_type &vec,int dim)
 		if(from%100) { PROGRESS_UPDATE(prog, from); }
 		bEOF = matfile.eof();
 	}
+	std::cout<<"\n Me ---------------"<<std::endl;
 	return true;
 }
 
-// load vector that has been saved in connection viewer format and write it
-// into grid function
 template<typename TGridFunction>
-void LoadVector22(TGridFunction& u,const char* filename){
-	PROFILE_FUNC();
-	typename TGridFunction::algebra_type::vector_type b;
-	b.resize(u.num_indices());
-	ReadVector(filename,b,TGridFunction::dim);
-	u.assign(b);
+void Assign22(TGridFunction& vec){
+	//PROFILE_FUNC();
+	int gridsize;
+	gridsize = (int)vec.size();
+
+	cout<<" "<<endl;
+	for(int i=0; i<gridsize; i++)
+	{
+	cout<<vec[i]<<endl;
+	vec[i]=0.0;
+	}
 }
 //test end
 
@@ -212,12 +220,16 @@ static void DomainAlgebra(Registry& reg, string grp)
 	 }
 	 */
 		//	WriteGridToVTK
-			{
-				reg.add_function("LoadVector22",
-								 &LoadVector22<function_type>, grp,
+	{
+		reg.add_function("LoadVector22",
+							&LoadVector22<function_type>, grp,
+							"", "GridFunction#Filename|save-dialog|endings=[\"vtk\"];description=\"VTK-Files\"",
+							"Saves GridFunction to *.vtk file", "No help");
+		reg.add_function("Assign22",
+									&Assign22<function_type>, grp,
 									"", "GridFunction#Filename|save-dialog|endings=[\"vtk\"];description=\"VTK-Files\"",
 									"Saves GridFunction to *.vtk file", "No help");
-			}
+	}
 }
 
 /**
