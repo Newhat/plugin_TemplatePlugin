@@ -585,7 +585,7 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 	//	iterator
 	typename DoFDistribution::traits<Vertex>::const_iterator iter, iterEnd;
 	//	algebra indices vector
-	std::vector<size_t> ind;
+	std::vector<size_t> ind,ind1,ind2;
 	// 12301------------
 	map<Vertex*, size_t> umap, Mmap;
 	//	The unkowns collected by chosen markers
@@ -760,6 +760,10 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 					M(umap[V],umap[Vos[j]]) = temp(0,0);
 					M(umap[Vos[j]],umap[V]) = temp(0,0);
 					//cout<<"V :"<<aaPos[V]<<", Vos["<<j<<"] :"<<aaPos[Vos[j]]<<endl;
+					dd->inner_algebra_indices(V, ind1);
+					dd->inner_algebra_indices(Vos[j], ind2);
+					if(M(umap[V],umap[Vos[j]])-N(ind1[0],ind2[0])!=0)
+					cout<<M(umap[V],umap[Vos[j]])-N(ind1[0],ind2[0])<<endl;
 				}
 			}
 
