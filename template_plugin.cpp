@@ -438,12 +438,14 @@ CoarseFromFine(Vertex* V,Vertex* Vn,SmartPtr<DoFDistribution> dd,
 		TAlgebra &N,
 		map<Vertex*, size_t> Mmap,
 		vector<size_t> markers)
-		{
+{
 	typename TDomain::position_accessor_type& aaPos = domain->position_accessor();
 	typename TDomain::subset_handler_type* Dsh = domain->subset_handler().get();
 	ug::DenseMatrix<ug::FixedArray2<double, 2, 2> > temp;
-	Vertex* v11;
-	Vertex* v12;
+	temp = 0.0;
+
+	Vertex* v11=NULL;
+	Vertex* v12=NULL;
 	vector<Vertex*> Vrs;
 	vector<Vertex*> Vls;
 	vector<Vertex*> Vnrs;
@@ -452,44 +454,59 @@ CoarseFromFine(Vertex* V,Vertex* Vn,SmartPtr<DoFDistribution> dd,
 	vector<Vertex*> Vns;
 	map<Vertex*, double> CV,CVn;
 
-	//cout<<"marker = "<<Dsh->get_subset_index(V)<<endl;
+	Dsh->get_subset_index(V);
 
 	std::vector<size_t> ind, ind1,ind2;
-	Dsh->get_subset_index(V);
+	//Dsh->get_subset_index(V);
 	//Dsh->get_subset_index(Vrs[0]);
 	aaPos[V];
+	//cout<<V<<endl;
+
 	//1, basis for V point -------------------------------
 	v12 = V;
+
+	//cout<<Mmap[V]+1<<endl;
+
 	for(size_t i=markers[Mmap[V]];i<markers[Mmap[V]+1];i++)
 	{
 		v11 = Vnext(v12,domain,'r');
-		Vrs.push_back(v11);
+		if(v11!=NULL)
+			Vrs.push_back(v11);
 		v12 = v11;
 	}
+
+	v11 = NULL;
 	v12 = V;
 	for(size_t i=markers[Mmap[V]-1];i<markers[Mmap[V]];i++)
 	{
 		v11 = Vnext(v12,domain,'l');
-		Vls.push_back(v11);
+		if(v11!=NULL)
+			Vls.push_back(v11);
 		v12 = v11;
 	}
+	v11 = NULL;
+
 	//2, basis for Vn point -------------------------------
 	v12 = Vn;
 	for(size_t i=markers[Mmap[Vn]];i<markers[Mmap[Vn]+1];i++)
 	{
 		v11 = Vnext(v12,domain,'r');
-		Vnrs.push_back(v11);
+		if(v11!=NULL)
+			Vnrs.push_back(v11);
 		v12 = v11;
 		//cout<<aaPos[v11]<<endl;
 	}
+	v11 = NULL;
 	v12 = Vn;
 	for(size_t i=markers[Mmap[Vn]-1];i<markers[Mmap[Vn]];i++)
 	{
 		v11 = Vnext(v12,domain,'l');
-		Vnls.push_back(v11);
+		if(v11!=NULL)
+			Vnls.push_back(v11);
 		v12 = v11;
 		//cout<<aaPos[v11]<<endl;
 	}
+	v11 = NULL;
 	// the coefficients of V's basis functions ---------------
 	CV[V] = 1.0;
 	Vs.push_back(V);
@@ -540,8 +557,8 @@ CoarseFromFine(Vertex* V,Vertex* Vn,SmartPtr<DoFDistribution> dd,
 	//cout<<N(ind2[0],ind2[0])<<endl;
 	//cout<<"Vs.size(): "<<Vs.size()<<endl;
 	//cout<<"Vns.size(): "<<Vns.size()<<endl;
-	temp = 0.0;
-	//N(0,0) = 0.0;
+
+
 	for(size_t k=0;k<Vs.size();k++)
 	{
 		dd->inner_algebra_indices(Vs[k],  ind1);
@@ -551,6 +568,7 @@ CoarseFromFine(Vertex* V,Vertex* Vn,SmartPtr<DoFDistribution> dd,
 			temp+=CV[Vs[k]]*CVn[Vns[j]]*N(ind1[0],ind2[0]);
 		}
 	}
+
 
 	return temp;
 		}
@@ -582,11 +600,12 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 		markers.push_back(2+Ms*i);
 		//cout << i <<"  "<< 2+Ms*i<<endl;
 	}
-	markers.push_back(MarkerSize-1);
+	markers.push_back(MarkerSize-1); //here comes the problem 2+Ms*i can be MarkerSize-1
 	// the map from Vertex* to index of coarse matrix
 	size_t jc = 0;
 	for(size_t mk = 1;mk<(markers.size()-1);mk++)
 	{
+		//cout<<markers[mk]<<endl;
 		iter = dd->begin<Vertex>(markers[mk], SurfaceView::ALL);
 		iterEnd = dd->end<Vertex>(markers[mk], SurfaceView::ALL);
 		for(;iter != iterEnd; ++iter)
@@ -617,11 +636,12 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 
 			//	get vertex---------------------------------------------12301
 			Vertex* V = *iter;
-			Vertex* v11;
-			Vertex* v12;
+			Vertex* v11 = NULL;
+			Vertex* v12 = NULL;
 			//vector<Vertex*> Vrs;
 			//vector<Vertex*> Vls;
 			vector<Vertex*> Vos;
+			//Vos collects points around V and V
 			//cout<<aaPos[V]<<endl;
 			aaPos[V];
 			// dd->inner_algebra_indices(V, ind);
@@ -641,11 +661,12 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 				//cout<<"index = "<<ind[0]<<endl;
 				//cout<<aaPos[v11]<<endl;
 			}
-			if((size_t)Dsh->get_subset_index(v11)<markers.back())
+			if(v11!=NULL && (size_t)Dsh->get_subset_index(v11)<=markers.back())
 			{
 				Vos.push_back(v11);
 				//cout<<aaPos[Vrs.back()]<<endl;
 			}
+			v11 = NULL;
 			v12 = V;
 			for(size_t i=markers[mk-1];i<markers[mk];i++)
 			{
@@ -657,12 +678,12 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 				//cout<<"index = "<<ind[0]<<endl;
 				//cout<<aaPos[v11]<<endl;
 			}
-			if((size_t)Dsh->get_subset_index(v11)>markers[0])
+			if(v11!=NULL && (size_t)Dsh->get_subset_index(v11)>=markers[0])
 			{
 				Vos.push_back(v11);
 				//cout<<aaPos[Vls.back()]<<endl;
 			}
-
+			v11 = NULL;
 			// 1/7/2020 -----------------------------------------------1214
 			//  collected edges
 			MultiGrid::edge_traits::secure_container edges;
@@ -699,11 +720,12 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 							//cout<<"index = "<<ind[0]<<endl;
 							//cout<<aaPos[v11]<<endl;
 						}
-						if((size_t)Dsh->get_subset_index(v11)<markers.back())
+						if(v11!=NULL && (size_t)Dsh->get_subset_index(v11)<=markers.back())
 						{
 							Vos.push_back(v11);
 							//cout<<"right: "<<aaPos[v11]<<endl;
 						}
+						v11 = NULL;
 						//cout<<"nearby verts: "<<aaPos[e->vertex(j)]<<endl;
 						v12 = Vn;
 						for(size_t i=markers[mk-1];i<markers[mk];i++)
@@ -716,11 +738,12 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 							//cout<<"index = "<<ind[0]<<endl;
 							//cout<<aaPos[v11]<<endl;
 						}
-						if((size_t)Dsh->get_subset_index(v11)>markers[0])
+						if(v11!=NULL && (size_t)Dsh->get_subset_index(v11)>=markers[0])
 						{
 							Vos.push_back(v11);
 							//cout<<"left: "<<aaPos[v11]<<endl;
 						}
+						v11 = NULL;
 						//cout<<"center v : "<<aaPos[v]<<endl;
 						//cout<<"nby verts: "<<aaPos[Vn]<<endl;
 					}
@@ -733,13 +756,13 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 			{
 				if(umap[Vos[j]]>=umap[V])
 				{
-				temp = CoarseFromFine(V,Vos[j],dd,domain,N,Mmap,markers);
-				//cout<<"temp :"<<temp<<endl;
-				M(umap[V],umap[Vos[j]]) = temp(0,0);
-				M(umap[Vos[j]],umap[V]) = temp(0,0);
+					temp = CoarseFromFine(V,Vos[j],dd,domain,N,Mmap,markers);
+					M(umap[V],umap[Vos[j]]) = temp(0,0);
+					M(umap[Vos[j]],umap[V]) = temp(0,0);
+					//cout<<"V :"<<aaPos[V]<<", Vos["<<j<<"] :"<<aaPos[Vos[j]]<<endl;
 				}
 			}
-			//cout<<M(umap[V],umap[Vos[j]])<<endl;
+
 		}
 
 	}
@@ -807,8 +830,8 @@ void Vector3dFineToCoarse(TGridFunction &u,TAlgebra &vec,SmartPtr<TDomain> domai
 
 			//	get vertex---------------------------------------------12301
 			Vertex* V = *iter;
-			Vertex* v11;
-			Vertex* v12;
+			Vertex* v11=NULL;
+			Vertex* v12=NULL;
 			vector<Vertex*> Vrs;
 			vector<Vertex*> Vls;
 			vector<Vertex*> Vs;
@@ -825,16 +848,20 @@ void Vector3dFineToCoarse(TGridFunction &u,TAlgebra &vec,SmartPtr<TDomain> domai
 			for(size_t i=markers[mk];i<markers[mk+1];i++)
 			{
 				v11 = Vnext(v12,domain,'r');
-				Vrs.push_back(v11);
+				if(v11!=NULL)
+					Vrs.push_back(v11);
 				v12 = v11;
 			}
+			v11 = NULL;
 			v12 = V;
 			for(size_t i=markers[mk-1];i<markers[mk];i++)
 			{
 				v11 = Vnext(v12,domain,'l');
-				Vls.push_back(v11);
+				if(v11!=NULL)
+					Vls.push_back(v11);
 				v12 = v11;
 			}
+			v11 = NULL;
 			// 1/7/2020 -----------------------------------------------1214
 			map<Vertex*, double> CV;
 			// the coefficients of V's basis functions ---------------
@@ -940,8 +967,8 @@ void Vector3dCompare(TGridFunction &u,TAlgebra &vec,SmartPtr<TDomain> domain,
 		{
 			//	get vertex---------------------------------------------12301
 			Vertex* V = *iter;
-			Vertex* v11;
-			Vertex* v12;
+			Vertex* v11=NULL;
+			Vertex* v12=NULL;
 			vector<Vertex*> Vrs;
 			vector<Vertex*> Vls;
 
@@ -956,19 +983,23 @@ void Vector3dCompare(TGridFunction &u,TAlgebra &vec,SmartPtr<TDomain> domain,
 			for(size_t i=markers[mk];i<markers[mk+1];i++)
 			{
 				v11 = Vnext(v12,domain,'r');
-				Vrs.push_back(v11);
+				if(v11!=NULL)
+					Vrs.push_back(v11);
 				v12 = v11;
 			}
+			v11 = NULL;
 			if(mk==1)
 			{
 				v12 = V;
 				for(size_t i=markers[mk-1];i<markers[mk];i++)
 				{
 					v11 = Vnext(v12,domain,'l');
-					Vls.push_back(v11);
+					if(v11!=NULL)
+						Vls.push_back(v11);
 					v12 = v11;
 				}
 			}
+			v11 = NULL;
 			// 1/7/2020 -----------------------------------------------1214
 			map<Vertex*, double> CV,CVL;
 			size_t Len;
