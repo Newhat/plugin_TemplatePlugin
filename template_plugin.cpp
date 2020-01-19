@@ -182,17 +182,20 @@ void Assign22(TGridFunction& vec,TAlgebra &b){
 	int gridsize, size2;
 	gridsize = (int)vec.size();
 	size2 = (int)b.size();
-	cout<<"u: "<<endl;
-	for(int i=0; i<gridsize; i++)
+	//if(gridsize==size2)
 	{
-		//vec[i] = b[i];
-		//cout<<vec[i]<<endl;
+		//cout<<"u: "<<endl;
+		for(int i=0; i<size2; i++)
+		{
+			//vec[i] = b[i];
+			cout<<vec[i+gridsize-size2]<<"; "<<b[i]<<endl; //test
+		}
 	}
-	cout<<"b: "<<endl;
-	for(int i=0; i<size2; i++)
+
+	/*else
 	{
-		cout<<b[i]<<endl;
-	}
+		cout<<'\n'<<"Assign22: dimension not match"<<endl;
+	}*/
 }
 //test end
 template<typename TAlgebra>
@@ -241,9 +244,9 @@ void ExtractPositionsV3dto1d(TGridFunction &u,TAlgebra &b, SmartPtr<TDomain> dom
 	std::vector<size_t> ind;
 	//	get iterators for subsets
 	int MarkerSize = (int)b.size();
-	int marker;
+	int marker; //all inner points, no boundary points
 	for(marker = 3;marker<=MarkerSize;marker++)
-	{	//cout<<"marker is: ";
+	{	//cout<<"marker is: "; //----------------------test here
 		//cout<<marker<<endl;
 		iter = dd->begin<Vertex>(marker, SurfaceView::ALL);
 		iterEnd = dd->end<Vertex>(marker, SurfaceView::ALL);
@@ -762,8 +765,12 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 					//cout<<"V :"<<aaPos[V]<<", Vos["<<j<<"] :"<<aaPos[Vos[j]]<<endl;
 					dd->inner_algebra_indices(V, ind1);
 					dd->inner_algebra_indices(Vos[j], ind2);
+					/*
 					if(M(umap[V],umap[Vos[j]])-N(ind1[0],ind2[0])!=0)
 					cout<<M(umap[V],umap[Vos[j]])-N(ind1[0],ind2[0])<<endl;
+					if(ind1[0]-umap[V]!=10** || ind2[0]-umap[Vos[j]]!=10**)
+					cout<<ind1[0]-umap[V]<<", "<<ind2[0]-umap[Vos[j]]<<endl;
+					*/
 				}
 			}
 
@@ -903,7 +910,15 @@ void Vector3dFineToCoarse(TGridFunction &u,TAlgebra &vec,SmartPtr<TDomain> domai
 				//cout<<"CV[Vs[j]] :"<<CV[Vs[j]]<<endl;
 			}
 			vec[umap[V]] = temp(0,0);
-			//cout<<M(umap[V],umap[Vos[j]])<<endl;
+			//cout<<umap[V]<<", :"<<vec[umap[V]]<<endl; //test
+			//dd->inner_algebra_indices(V,  ind);
+			/*
+			if(vec[umap[V]]-u[ind[0]]!=0)
+			{
+				cout<<vec[umap[V]]-u[ind[0]]<<endl;
+				cout<<"V :"<<aaPos[V]<<endl;
+			}
+			*/
 		}
 
 	}
@@ -1015,24 +1030,26 @@ void Vector3dCompare(TGridFunction &u,TAlgebra &vec,SmartPtr<TDomain> domain,
 			//cout<<"Vrs.size(): "<<Vrs.size()<<endl;
 			//cout<<"Vrs.back(): "<<aaPos[Vrs.back()]<<endl;
 			for(size_t j=0;j<Vrs.size();j++)
-			{	Len = Vrs.size();
-			if(mk==markers.size()-2){Len +=1;}
-			CV[Vrs[j]] =((double)Len-1.0-(double)j )/(double)Len;
-			CVL[Vrs[j]] =1.0-((double)Len-1.0-(double)j )/(double)Len;
-			dd->inner_algebra_indices(Vrs[j], ind);
-			if(mk==markers.size()-2){
-				u[ind[0]] = CV[Vrs[j]]*vec[umap[V]];
-			}
-			else{
-				u[ind[0]] = CV[Vrs[j]]*vec[umap[V]]+CVL[Vrs[j]]*vec[umap[Vrs.back()]];
-			}
-			//cout<<aaPos[Vrs[j]]<<";  "<<CV[Vrs[j]]<<endl;
-			//cout<<aaPos[Vrs[j]]<<";  "<<CVL[Vrs[j]]<<endl;
+			{
+				Len = Vrs.size();
+				if(mk==markers.size()-2){Len +=1;}
+				CV[Vrs[j]] =((double)Len-1.0-(double)j )/(double)Len;
+				CVL[Vrs[j]] =1.0-((double)Len-1.0-(double)j )/(double)Len;
+				dd->inner_algebra_indices(Vrs[j], ind);
+				if(mk==markers.size()-2){
+					u[ind[0]] = CV[Vrs[j]]*vec[umap[V]];
+				}
+				else{
+					u[ind[0]] = CV[Vrs[j]]*vec[umap[V]]+CVL[Vrs[j]]*vec[umap[Vrs.back()]];
+				}
+				//cout<<aaPos[Vrs[j]]<<";  "<<CV[Vrs[j]]<<endl;
+				//cout<<aaPos[Vrs[j]]<<";  "<<CVL[Vrs[j]]<<endl;
 			}
 			if(mk==1) //L R sides uncorrect
 			{
 				dd->inner_algebra_indices(V, ind);
 				u[ind[0]] = CV[V]*vec[umap[V]];
+				//cout<<"V :"<<aaPos[V]<<endl;
 				for(size_t j=0;j<Vls.size();j++)
 				{
 					Len = Vls.size()+1;
@@ -1091,6 +1108,12 @@ void ComV(TGridFunction &r3d,TAlgebra &vec,size_t Ms){
 	Vector3dCompare(r3d,vec,r3d.domain(),r3d.dof_distribution(),Ms);
 	//-----------------------------------------------------
 
+}
+
+
+template<typename TAlgebra>
+void dispm(TAlgebra &M){
+	M.print();
 }
 //end test ------------------------------------------------------
 
@@ -1205,9 +1228,10 @@ struct Functionality
 		string suffix = GetAlgebraSuffix<TAlgebra>();
 		string tag = GetAlgebraTag<TAlgebra>();
 		typedef typename TAlgebra::vector_type vector_type;
-		//typedef typename TAlgebra::matrix_type matrix_type;
+		typedef typename TAlgebra::matrix_type matrix_type;
 
 		reg.add_function("disp", &disp<vector_type>, grp);
+		reg.add_function("disp", &dispm<matrix_type>, grp);
 		//reg.add_function("dispM", &dispM<matrix_type>, grp);
 
 	}
