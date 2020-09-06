@@ -111,10 +111,12 @@ class TemplateSampleClass {
 public:
 	TemplateSampleClass ()		{}
 	vector<Vertex*> Vlists;
+	//vector<Vertex*> Vtest[10];
 	vector<size_t> Vmarkers;
 	void print_hello () const	{UG_LOG("hello\n");}
 	vector<Vertex*> get_Vlists() {return Vlists;}
 	vector<size_t> get_Vmarkers() {return Vmarkers;}
+	//vector<Vertex*> get_Vtest() {return Vtest;}
 };
 
 ///	a sample function that us used to show how a simple function can be registered
@@ -343,6 +345,198 @@ void ExtractPositions1dto3d(TAlgebra &b,TGridFunction &u)
 	//	cout<<vPos[0]<<endl;
 	//	cout<<vPos[0][0]<<endl;
 }
+
+//-----------------------------------------------------------------------------
+// assign subsets for Non-zero boundary set
+//-----------------------------------------------------------------------------
+template <typename TDomain, typename TGridFunction>
+void Assign_Subsets_Non0_Boundary(TGridFunction &u,SmartPtr<TDomain> domain,
+		SmartPtr<DoFDistribution> dd,int Meshcounts,double Meshbegin,double Meshsize,vector<Vertex*>* Vlis)
+{
+	//Meshcounts is the number of edges for 1D mesh
+	//ug::DenseVector<ug::FixedArray1<double, 2> > temp;
+	//	get position accessor
+	typename TDomain::position_accessor_type& aaPos = domain->position_accessor();
+	//  get marker accessor
+	//typename TDomain::subset_handler_type* Dsh = domain->subset_handler().get();
+	//	iterator
+	typename DoFDistribution::traits<Vertex>::const_iterator iter, iterEnd;
+	//	algebra indices vector
+	int i, j;
+	double tempX;
+	map<int, int> umap;
+	map<Vertex*, int> Vmap;
+	for(j=0;j<(Meshcounts+1);j++)
+	{
+		i=round( (Meshbegin+(double)(j)*Meshsize)*(double)round(2/Meshsize) );
+		umap[i] = j;
+	}
+	int counter = 0;
+	iter = dd->begin<Vertex>(1, SurfaceView::ALL);
+	iterEnd = dd->end<Vertex>(1, SurfaceView::ALL);
+	for(;iter != iterEnd; ++iter)
+	{
+			counter+=1;
+			tempX = aaPos[*iter].x()*(double)round(2/Meshsize);
+			Vmap[*iter] = umap[round(tempX)];
+			//cout << counter<<", "<<aaPos[V] << ", "<<Vmap[V] <<endl;
+	}
+
+	//vector<Vertex*> Vlis[Meshcounts+1]; //-------------
+	map<Vertex*, int>::iterator it;
+	for(it = Vmap.begin();it != Vmap.end();++it)
+	{
+		Vlis[it->second].push_back(it->first);
+
+	}
+/*
+	for(int i=0;i<Meshcounts+1;++i)
+	{
+		for(size_t j=0;j<Vlis[i].size();++j)
+		{
+			cout<<i<<", "<<aaPos[Vlis[i][j]]<<endl;
+		}
+	}
+*/
+}
+//----------------------------------------------------------------------------------
+template<class TGridFunction,typename TAlgebra>
+//vector<vector<Vertex*>>
+void Subsets_Non0_Boundary(TGridFunction &u,TAlgebra &vec,
+		size_t Meshcounts,double Meshbegin,double Meshsize)
+{
+	//vec can be used later such as non-uniform Meshzise
+	vector<Vertex*> Vlists[Meshcounts+1];
+	Assign_Subsets_Non0_Boundary(u,u.domain(),u.dof_distribution(),Meshcounts,Meshbegin,Meshsize,Vlists);
+	//cout<<Vlists[Meshcounts].size()<<endl;
+	//-----------------------------------------------------
+}
+
+//-----------------------------------------------------------------------------
+// matrix 3d to 1d, Non-zero boundary
+//-----------------------------------------------------------------------------
+template <typename TDomain, typename TGridFunction, typename TAlgebra>
+void Matrix3dFineTo1dNon0(TGridFunction &u,TAlgebra &M,TAlgebra &N,
+		SmartPtr<TDomain> domain,SmartPtr<DoFDistribution> dd,
+		vector<Vertex*>* Vlists)
+{
+	//	get position accessor
+	typename TDomain::position_accessor_type& aaPos = domain->position_accessor();
+	//  get marker accessor
+	typename TDomain::subset_handler_type* Dsh = domain->subset_handler().get();
+	//	iterator
+	typename DoFDistribution::traits<Vertex>::const_iterator iter, iterEnd;
+	//	algebra indices vector
+	std::vector<size_t> ind1,ind2;
+	size_t Ms=1;
+	// 12301------------
+	map<Vertex*, size_t> umap;// Mmap;
+	//	The unkowns collected by chosen markers
+	size_t MarkerSize = Dsh->num_subsets();
+	//cout<<"marker max size is "<<MarkerSize<<endl;
+	size_t num = MarkerSize-3;
+	//size_t Ms = 10;
+	vector<size_t> markers;
+	markers.push_back(3);
+	for(size_t i=1; i<=(num-num % Ms)/Ms;i++)
+	{
+		markers.push_back(2+Ms*i);
+		//cout << i <<"  "<< 2+Ms*i<<endl;
+	}
+	markers.push_back(MarkerSize-1); //here comes the problem 2+Ms*i can be MarkerSize-1
+	// the map from Vertex* to index of coarse matrix
+	size_t jc = 0;
+	for(size_t i = 0;i<MarkerSize-1;i++)
+	{
+		for(size_t j=0;j<Vlists[i].size();j++)
+		{
+			umap[Vlists[i][j]] = jc;
+		}
+		jc+=1;
+	}
+	//cout<<"jc is: "<<jc<<endl;
+	for(size_t mk = 1;mk<(markers.size()-1);mk++)
+	{
+		//cout<<markers[mk]<<endl;
+		iter = dd->begin<Vertex>(markers[mk], SurfaceView::ALL);
+		iterEnd = dd->end<Vertex>(markers[mk], SurfaceView::ALL);
+		for(;iter != iterEnd; ++iter)
+		{
+			umap[*iter] = jc;
+		}
+		jc+=1;
+	}
+	cout<<"jc is: "<<jc<<endl;
+	M.resize_and_clear(jc, jc);
+	for(size_t k = 0;k<MarkerSize-1;k++)
+	{
+		M(k,k) = 1.0;
+	}
+
+	for(size_t mk = 0;mk<MarkerSize-1;mk++)
+	{
+		ug::DenseMatrix<ug::FixedArray2<double, 2, 2> > temp,temp1;
+		temp=0.0;
+		temp1=0.0;
+		for(size_t jk=0;jk<Vlists[mk].size();jk++)
+		{
+			//	get vertex---------------------------------------------
+			Vertex* V = Vlists[mk][jk];
+			vector<Vertex*> Vos;
+			//Vos collects points around V and V
+			//cout<<aaPos[V]<<endl;
+			aaPos[V];
+			//Vos.push_back(V);
+			//  collected edges
+			MultiGrid::edge_traits::secure_container edges;
+			//nearest points around point V--------------------------------
+			domain->grid()->associated_elements(edges, V);
+			for(size_t i = 0; i < edges.size(); ++i)
+			{
+				Vertex* Vn=NULL;
+				Edge* e = edges[i];
+				for(size_t j=0;j<2;j++)
+				{
+					if((e->vertex(j)!=V)
+							&&(Dsh->get_subset_index(e->vertex(j))>Dsh->get_subset_index(V)))
+					{
+						Vn = e->vertex(j);
+						Vos.push_back(Vn);
+						//cout<<"nby verts: "<<aaPos[Vn]<<endl;
+					}
+				}
+			}
+
+			//assemble boundary parts of coarse matrix from fine matrix
+			for(size_t j=0;j<Vos.size();j++)
+			{
+				dd->inner_algebra_indices(V, ind1);
+				dd->inner_algebra_indices(Vos[j], ind2);
+				M(umap[Vos[j]],umap[V])+=N(ind2[0],ind1[0]);
+			}
+		}
+		//cout<<"---------------------------------"<<endl;
+	}
+}
+
+template<class TGridFunction,typename TAlgebra>
+void Matrix3dto1dNon0(TGridFunction &v,TAlgebra &M,TAlgebra &N,TGridFunction &vec,
+		size_t Meshcounts,double Meshbegin,double Meshsize)
+{
+	vector<Vertex*> Vlists[Meshcounts+1];
+	Assign_Subsets_Non0_Boundary(v,v.domain(),v.dof_distribution(),Meshcounts,Meshbegin,Meshsize,Vlists);
+	Matrix3dFineTo1dNon0(v,M,N,v.domain(),v.dof_distribution(),Vlists);
+	vec.resize(2*Meshcounts);
+	for(size_t i=0;i<vec.size();i++)
+		vec[i] = double(i);
+}
+//-----------------------------------------------------------------------------
+// matrix 3d to 1d, Non-zero boundary end
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+//-------------------------- matrix 3d to 1d, zero boundary -------------------
+//-----------------------------------------------------------------------------
 template <typename TDomain, typename TGridFunction, typename TAlgebra>
 void Matrix3dFineTo1d(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDomain> domain,
 		SmartPtr<DoFDistribution> dd)
@@ -489,7 +683,9 @@ void Matrix3dto1d(TGridFunction &v,TAlgebra &M,TAlgebra &N)
 	Matrix3dFineTo1d(v,M,N,v.domain(),v.dof_distribution());
 	cout<<" "<<endl;
 }
-// test 2020 ------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// matrix 3d to 1d, zero boundary end -----------------------------------------
+//-----------------------------------------------------------------------------
 
 // 1/7/2020 -----------------------------------------------1214
 template <typename TDomain>
@@ -1022,7 +1218,10 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 					//---------------------------------------------------------
 				}
 			}
+			/*
+			//------------------------------------------------------------------
 			//put second nearest points in to Vos
+			//------------------------------------------------------------------
 			for(set<Vertex*>::iterator it=setVs.begin(); it!=setVs.end(); ++it)
 			{
 				domain->grid()->associated_elements(edges, *it);
@@ -1099,7 +1298,10 @@ void Matrix3dFineToCoarse(TGridFunction &u,TAlgebra &M,TAlgebra &N,SmartPtr<TDom
 					}
 				}
 			}
-			//--------------------------------------------------------12301
+			//------------------------------------------------------------------
+			//put second nearest points in to Vos End
+			//------------------------------------------------------------------
+			*/
 			//assemble coarse matrix from fine matrix
 			ug::DenseMatrix<ug::FixedArray2<double, 2, 2> > temp;
 			for(size_t j=0;j<Vos.size();j++)
@@ -1663,7 +1865,7 @@ void CompareMatrix(TAlgebra &M,TAlgebra &N)
 			for(size_t j=0;j<Nr;j++)
 			{
 				if(M(i+Mr-Nr,j+Mr-Nr)-N(i,j) != 0)
-					cout<<"("<<i<<","<<j<<"), M: "<<M(i+Mr-Nr,j+Mr-Nr)<<" ,N: "<<N(i,j) <<endl;
+					cout<<"("<<i+Mr-Nr<<","<<j+Mr-Nr<<"), M: "<<M(i+Mr-Nr,j+Mr-Nr)<<" ,N: "<<N(i,j) <<endl;
 			}
 		}
 	}
@@ -1678,6 +1880,67 @@ void CompareMatrix(TAlgebra &M,TAlgebra &N)
 			}
 		}
 	}
+}
+
+template<typename TAlgebra>
+void AssignMatrix(TAlgebra &M,TAlgebra &N)
+{
+	size_t Mr=M.num_rows();
+	size_t Nr=N.num_rows();
+	if(Mr>=Nr)
+	{
+		for(size_t i=0;i<Nr;i++)
+		{
+			for(size_t j=0;j<Nr;j++)
+			{
+				if(N(i,j) != 0)
+					M(i+Mr-Nr,j+Mr-Nr)=N(i,j);
+			}
+		}
+	}
+	else
+	{
+		for(size_t i=0;i<Mr;i++)
+		{
+			for(size_t j=0;j<Mr;j++)
+			{
+				if(M(i,j) != 0)
+					N(i-Mr+Nr,j-Mr+Nr)=M(i,j);
+			}
+		}
+	}
+}
+
+template<typename TGridFunction, typename TAlgebra>
+void AssignVectorNon0(TGridFunction& vec,TAlgebra &b)
+{
+	//PROFILE_FUNC();
+	int gridsize, size2;
+	gridsize = (int)vec.size();
+	size2 = (int)b.size();
+	if(gridsize>=size2)
+	{
+		//cout<<"u: "<<endl;
+		for(int i=2; i<size2; i++)
+		{
+			vec[i+gridsize-size2] = b[i];
+			//cout<<i+gridsize-size2<<", "<<vec[i+gridsize-size2]<<"; "<<b[i]<<endl; //test
+		}
+	}
+	else
+	{
+		vec[0]=0;
+		vec[1]=0;
+		for(int i=2; i<gridsize; i++)
+		{
+			vec[i] = b[i-gridsize+size2];
+		}
+	}
+}
+template<typename TGridFunction>
+void AssignVectorNon01(TGridFunction& vec,double value,size_t i)
+{
+	vec[i] = value;
 }
 
 template<typename TGridFunction, typename TAlgebra>
@@ -1767,11 +2030,12 @@ struct Functionality
 			typedef TemplateSampleClass<TDomain, TAlgebra> T;
 			string name = string("TemplateSampleClass").append(suffix);
 			reg.add_class_<T>(name, grp)
-	 					.add_constructor()
-						.add_method("print_hello", &T::print_hello, "", "", "prints hello")
-						.add_method("get_Vlists", &T::get_Vlists, "", "", "get Vlists")
-						.add_method("get_Vmarkers", &T::get_Vmarkers, "", "", "markers")
-						.set_construct_as_smart_pointer(true);
+	 							.add_constructor()
+								.add_method("print_hello",  &T::print_hello, "", "", "prints hello")
+								.add_method("get_Vlists",   &T::get_Vlists, "", "", "get Vlists")
+								.add_method("get_Vmarkers", &T::get_Vmarkers, "", "", "markers")
+								//.add_method("get_Vtest", &T::get_Vtest, "", "", "tests")
+								.set_construct_as_smart_pointer(true);
 			reg.add_class_to_group(name, "TemplateSampleClass", tag);
 		}
 
@@ -1784,6 +2048,10 @@ struct Functionality
 			reg.add_function("Prolongation1dto3d", &ExtractPositions1dto3d<function_type, vector_type>, grp);
 			reg.add_function("Restriction", &Restriction3dto1d<function_type>, grp);
 			reg.add_function("Matrix3dto1d", &Matrix3dto1d<function_type, matrix_type>, grp);
+			reg.add_function("Matrix3dto1dNon0", &Matrix3dto1dNon0<function_type, matrix_type>, grp);
+			reg.add_function("Subsets_Non0_Boundary",&Subsets_Non0_Boundary<function_type,vector_type>, grp);
+			reg.add_function("AssignVectorNon0", &AssignVectorNon0<function_type, vector_type>, grp);
+			reg.add_function("AssignVectorNon0", &AssignVectorNon01<function_type>, grp);
 
 			reg.add_function("CoarseM", &CoarseM<function_type,matrix_type>, grp);
 			reg.add_function("CoarseV", &CoarseV<function_type,vector_type>, grp);
@@ -1849,6 +2117,7 @@ struct Functionality
 		reg.add_function("disp", &disp<vector_type>, grp);
 		reg.add_function("disp", &dispm<matrix_type>, grp);
 		reg.add_function("CompareMatrix", &CompareMatrix<matrix_type>, grp);
+		reg.add_function("AssignMatrix",  &AssignMatrix<matrix_type>, grp);
 		//reg.add_function("dispM", &dispM<matrix_type>, grp);
 
 	}
