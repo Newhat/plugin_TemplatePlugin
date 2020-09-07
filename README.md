@@ -30,3 +30,6 @@ You can now activate your plugin and build it along with UG4 in the same way as
 the other plugins, too. To this go to your build-directory and type:
 
     cmake -DYourPlugin=ON .
+----------------------------------------------------------------------------------------
+This plugin is used for 1D - 3D dimension switch multigrid method.
+Prolongation and Restriction operators are defined.
